@@ -1,0 +1,241 @@
+
+
+<html lang="en">
+<head>
+  <title>OpenOndata - Urban Indicators</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wicket/1.3.6/wicket.js" integrity="sha256-UxS48CEz9C+ujinXfQxMBrMs8qbs8JvJAgh3PlNJScw=" crossorigin="anonymous"></script>
+  <link  href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" rel="stylesheet" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/heatmapjs@2.0.2/heatmap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-heatmap@1.0.0/leaflet-heatmap.min.js"></script>
+  
+  <script src="data/demoUrbanQuery.js"></script>
+
+    <style>
+    .info.legend{
+    padding: 6px 8px;
+    font: 14px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    }
+    .legend {
+    background-color: “black”;
+    line-height: 25px;
+    color: #555;
+    width: auto;
+    }
+    .legend i {
+    width: 14px;
+    height: 14px;
+    float: left;
+    margin-right: 8px;
+    }
+    </style>
+
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <span class="navbar-brand mb-0 h1">OpenOndata</span>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" href="index.html">Waves Monitoring</a>
+              </li>
+              <li class="nav-item active">
+                <a class="nav-link" href="#">Urban Indicators</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Github<i class="fas fa-xs fa-external-link-alt"></i></a>
+              </li>
+            </ul>
+          </div>
+      </nav>
+  <div class="container">
+      <h2 class="my-5">Italian Urban Areas Indicators (year 2015)</h2>
+
+      <div class="row">
+            <div class="form-group col-md-4">
+                <label for="Admin">Administrative Unit</label>
+                <select class="form-control" id="Admin" name="Admin">
+                </select>
+              </div>
+
+        <!--COURSE-->
+        <div class="form-group col-md-8">
+        <label for="Metric">Metric</label>
+        <select class="form-control" id="Metric" name="Metric">
+        </select>
+        </div>
+    </div>
+
+
+       <div id="map-placeholder" style="height:100%"></div>
+
+   </div>
+   <footer class="page-footer mt-5 font-small alert-secondary py-4">
+    <div class="text-center py-2 mx-2">This data visualization demo was developed by <a href="http://stlab.istc.cnr.it/stlab/" target="_blank">STLab (ISTC-CNR) <i class="fas  fa-xs fa-external-link-alt"></i></a> in collaboration with <a target="_blank" href="https://www.isprambiente.gov.it/it">ISPRA <i class="fas  fa-xs fa-external-link-alt"></i></a>, within the project <a target="_blank" href="http://dati.isprambiente.it/">ISPRA Linked Data <i class="fas   fa-xs fa-external-link-alt"></i></a>.</div>
+</footer>
+  <script>
+    
+    $(document).ready(function() {
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+        };
+
+
+        data = data.results.bindings
+        var new_data = {}
+
+        for (var i = 0; i < data.length; i++) {
+
+          var type = data[i].type.value
+          var metric = data[i].metrLab.value
+
+          if (!(type in new_data)){
+            new_data[type] = {}
+          }
+          if (!(metric in new_data[type])){
+            new_data[type][metric] = []
+          }
+          var indicator = {}
+          indicator.label = data[i].placename.value
+          geom = data[i].point.value.replace("POINT (","").replace(")", "").split(" ")
+          indicator.lat = geom[1]
+          indicator.long = geom[0]
+          indicator.value = data[i].val.value
+          indicator.unit = data[i].mu.value
+          new_data[type][metric].push(indicator)
+        }
+      
+        const myMap = L.map('map-placeholder',{
+        minZoom: 6,
+        maxZoom: 12
+          }).setView([42,13], 6)
+        
+        L.tileLayer(
+          'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}@2x.png',
+          { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }
+        ).addTo(myMap);
+        
+        myMap.doubleClickZoom.disable();
+        
+        var heatmapLayer = []
+        var allMarkers = L.layerGroup().addTo(myMap)
+        
+        var data_type = Object.keys(new_data)
+        for (var i = 0; i < data_type.length; i++) {
+              $("#Admin").append('<option value="'+ data_type[i] +'">'+ data_type[i] + '</option>')
+        }
+        $('#Admin').change(function() {
+            adminselected = $(this).val()
+            $('#Metric').empty();
+            metricobj = Object.keys(new_data[adminselected])
+            if (metricobj){
+              for (var i = 0; i < metricobj.length; i++) {
+                      $("#Metric").append('<option value="'+ metricobj[i] +'">'+ metricobj[i] + '</option>')
+              }
+              heat(new_data[adminselected][metricobj[0]], adminselected)
+              
+            }
+          })
+        
+        $('#Metric').change(function() {
+          metricselected = $(this).val()
+          adminselected = $('#Admin').val()
+          heat(new_data[adminselected][metricselected], adminselected)
+        })
+
+
+        function heat (selectedData, admin){
+              if (heatmapLayer){
+                myMap.removeLayer(heatmapLayer)
+              }
+              var cfg = {
+                      // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+                      // if scaleRadius is false it will be the constant radius used in pixels
+                      "radius": 0.5,
+                      "maxOpacity": 1,
+                      // scales the radius based on map zoom
+                      "scaleRadius": true,
+                      // if set to false the heatmap uses the global maximum for colorization
+                      // if activated: uses the data maximum within the current map boundaries
+                      //   (there will always be a red spot with useLocalExtremas true)
+                      "useLocalExtrema": true,
+                      // which field name in your data represents the latitude - default "lat"
+                      latField: 'lat',
+                      // which field name in your data represents the longitude - default "lng"
+                      lngField: 'long',
+                      // which field name in your data represents the data value - default "value"
+                      valueField: 'value'
+                    };
+
+                heatmapLayer = new HeatmapOverlay(cfg);
+                
+
+                heatmapLayer.addTo(myMap)
+                
+
+                var testData = {
+                  data: selectedData
+                }
+                heatmapLayer.setData(testData);
+
+                allMarkers.eachLayer(function(layer){ 
+                  allMarkers.removeLayer(layer)
+                })
+                for (var i = 0; i < selectedData.length; i++) {
+                  var marker = L.circle([selectedData[i].lat, selectedData[i].long], {
+                          fillOpacity: 0,
+                          color: "grey",
+                          opacity: 0.5,
+                          radius: 10000
+                      }).addTo(allMarkers)
+                  marker.bindPopup(
+                    "<b>" + admin + " of " + selectedData[i].label + "</b> \
+                    <p>" + selectedData[i].value +  selectedData[i].unit+ "</p>"
+
+                  );
+                  marker.on({
+                      mouseover: function() {
+                              this.openPopup()
+                      },
+                      mouseout: function() { 
+                              this.closePopup()
+                        }
+                      })
+                    }
+                      
+              
+              
+          }
+
+        $('#Admin').val(data_type[0])
+        metricobj = Object.keys(new_data[data_type[0]])
+        if (metricobj){
+          for (var i = 0; i < metricobj.length; i++) {
+                  $("#Metric").append('<option value="'+ metricobj[i] +'">'+ metricobj[i] + '</option>')
+          }
+        $("#Metric").val(metricobj[0])
+        heat(new_data[data_type[0]][metricobj[0]], data_type[0])
+        }
+
+  });
+
+  </script>
+</body>
+</html>

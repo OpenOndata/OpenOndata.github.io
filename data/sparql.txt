@@ -1,0 +1,57 @@
+select distinct ?date ?label ?lat ?long ?meters ?degree ?network
+
+where 
+{
+  ?x a <https://dati.isprambiente.it/ontology/indicators/Indicator>;
+  		<https://dati.isprambiente.it/ontology/core/atTime> ?time;
+  		<https://dati.isprambiente.it/ontology/core/hasUnitOfMeasure> <https://dati.isprambiente.it/ld/common/mu/meters>;
+  		<https://dati.isprambiente.it/ontology/measures/SourceObservation> ?obs;
+  		<https://dati.isprambiente.it/ontology/core/value> ?meters.
+  
+  ?y a <https://dati.isprambiente.it/ontology/indicators/Indicator>;
+  		<https://dati.isprambiente.it/ontology/measures/SourceObservation> ?obs;
+  		<https://dati.isprambiente.it/ontology/core/hasUnitOfMeasure> 	<https://dati.isprambiente.it/ld/common/mu/degrees>;
+  		<https://dati.isprambiente.it/ontology/core/value> ?degree.
+  
+  ?time <https://dati.isprambiente.it/ontology/core/time> ?date.
+  
+  ?obs <http://www.w3.org/2000/01/rdf-schema#label> ?label.
+  
+  ?obscol <https://dati.isprambiente.it/ontology/measures/consistOf> ?obs.
+  ?sensor <https://dati.isprambiente.it/ontology/measures/makesObservationCollection> ?obscol.
+  ?buoy <https://dati.isprambiente.it/ontology/measures/hasSubSystem> ?sensor;
+  		<https://dati.isprambiente.it/ontology/places/lat> ?lat;
+  		<https://dati.isprambiente.it/ontology/places/long> ?long.
+  
+   bind( strbefore( strafter( str(?sensor), "ron/" ), "/") as ?network )
+  }
+
+
+
+
+
+
+
+select ?val ?mu ?metrLab ?placename ?type ?point
+where{
+  
+  ?x a  <https://dati.isprambiente.it/ontology/indicators/Indicator>;
+        <https://dati.isprambiente.it/ontology/core/value> ?val;
+        <https://dati.isprambiente.it/ontology/core/hasUnitOfMeasure> ?M;
+   		<https://dati.isprambiente.it/ontology/core/isMemberOf> ?coll.
+  ?coll <https://dati.isprambiente.it/ontology/indicators/basedOnMetrics> ?metr;
+        <https://dati.isprambiente.it/ontology/core/isMemberOf> ?collind.
+  ?collcoll <https://dati.isprambiente.it/ontology/core/hasMember> ?collind;
+        <https://dati.isprambiente.it/ontology/places/hasPlace> ?place.
+  ?place a ?admin;
+            <https://dati.isprambiente.it/ontology/places/hasGeometry> ?geo.
+  ?geo <https://dati.isprambiente.it/ontology/places/geometry> ?point.
+  ?place <http://www.w3.org/2000/01/rdf-schema#label> ?placename.
+  ?metr <http://www.w3.org/2000/01/rdf-schema#label> ?metrLab.
+  ?M <https://dati.isprambiente.it/ontology/core/value> ?mu.
+  
+  FILTER(LANGMATCHES(LANG(?metrLab), "en"))
+  FILTER(regex(str(?geo), "point" ))
+  bind( strafter( str(?admin), "places/" ) as ?type )
+  
+  }

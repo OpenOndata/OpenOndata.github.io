@@ -1,0 +1,330 @@
+
+
+<html lang="en">
+<head>
+  <title>OpenOndata - Waves Monitoring</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wicket/1.3.6/wicket.js" integrity="sha256-UxS48CEz9C+ujinXfQxMBrMs8qbs8JvJAgh3PlNJScw=" crossorigin="anonymous"></script>
+  <link  href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" rel="stylesheet" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js" integrity="sha256-iwOC2Y7nazcGcp6/ssCIuZviWKow9gVN5ntSdgI0jQc=" crossorigin="anonymous"></script>
+  
+  <script src="data/demoQuery.js"></script>
+
+    <style>
+    .info.legend{
+    padding: 6px 8px;
+    font: 14px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    }
+    .legend {
+    background-color: “black”;
+    line-height: 25px;
+    color: #555;
+    width: auto;
+    }
+    .legend i {
+    width: 14px;
+    height: 14px;
+    float: left;
+    margin-right: 8px;
+    }
+    </style>
+
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <span class="navbar-brand mb-0 h1">OpenOndata</span>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item active">
+                <a class="nav-link" href="#">Waves Monitoring</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="urban.html">Urban Indicators</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Github<i class="fas fa-xs fa-external-link-alt"></i></a>
+              </li>
+            </ul>
+          </div>
+      </nav>
+  <div class="container">
+      <h2 class="my-5">Monthly Maximum Height and Direction of the Significant Wave Height</h2>
+
+      <div class="row">
+            <div class="form-group col">
+                <label for="Year">Year</label>
+                <select class="form-control" id="Year" name="Year">
+                </select>
+              </div>
+
+        <!--COURSE-->
+        <div class="form-group col">
+        <label for="Month">Month</label>
+        <select class="form-control" id="Month" name="Month">
+        </select>
+        </div>
+    </div>
+
+
+       <div id="map-placeholder" style="height:100%"></div>
+
+   </div>
+   <footer class="page-footer mt-5 font-small alert-secondary py-4">
+          <div class="text-center py-2 mx-2">This data visualization demo was developed by <a href="http://stlab.istc.cnr.it/stlab/" target="_blank">STLab (ISTC-CNR) <i class="fas  fa-xs fa-external-link-alt"></i></a> in collaboration with <a target="_blank" href="https://www.isprambiente.gov.it/it">ISPRA <i class="fas  fa-xs fa-external-link-alt"></i></a>, within the project <a target="_blank" href="http://dati.isprambiente.it/">ISPRA Linked Data <i class="fas   fa-xs fa-external-link-alt"></i></a>.</div>
+      </footer>
+  <script>
+    
+    $(document).ready(function() {
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+        };
+
+
+        data = data.results.bindings
+        var calendar = {}
+
+        for (var i = 0; i < data.length; i++) {
+
+          var date = data[i].date.value.split("-");
+          var year = date[0]
+          var month = parseInt(date [1])
+
+          if (!(year in calendar)){
+            calendar[year] = {}
+          }
+          if (!(month in calendar[year])){
+            calendar[year][month] = []
+          }
+          var indicator = {}
+          indicator.label = data[i].label.value
+          indicator.lat = data[i].lat.value
+          indicator.long = data[i].long.value
+          indicator.meters = data[i].meters.value
+          indicator.degree = data[i].degree.value
+          calendar[year][month].push(indicator)
+        }
+      
+
+        function literalMonth(num){
+          months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ]
+          return months[num-1]
+        }
+        //Douglas Scale Color Option
+        function Douglas(v, want_text = false) {
+          
+          if (want_text){
+            return v > 14 ? {"text":"Phenomenal (14m +)","color":"#292b2c"} :
+                  v > 9 ? {"text":"Very High (9m–14m)","color":"#553C7B"} :
+                  v > 6 ? {"text":"High (6m–9m)","color":"#922B21"} :
+                  v > 4 ? {"text":"Very Rough (4m–6m)","color":"#E74C3C"} :
+                  v > 2.5 ? {"text":"Rough (2.5m–4m)","color":"#E67E22"} :
+                  v > 1.25 ? {"text":"Moderate (1.25m–2.5m)","color":"#F4D03F"} :
+                  v > 0.5 ? {"text":"Slight (0.5m–1.25m)","color":"#16A085"} :
+                  v > 0.1 ? {"text":"Smooth (0.15m–0.5m)","color":"#76D7C4"} :
+                  v > 0 ? {"text":"Calm Rippled (0m-0.1m)","color":"#D5D8DC"} :
+                  {"text":"Calm Glassy (0m)","color":"#EAEDED"};
+          }
+          else{
+            return v > 14 ? "#292b2c" :
+            v > 9 ? "#553C7B" :
+            v > 6 ? "#922B21" :
+            v > 4 ? "#E74C3C" :
+            v > 2.5 ? "#E67E22" :
+            v > 1.25 ? "#F4D03F" :
+            v > 0.5 ? "#16A085" :
+            v > 0.1 ? "#76D7C4" :
+            v > 0 ? "#D5D8DC" :
+            "#EAEDED";
+          }
+        }
+
+        const myMap = L.map('map-placeholder',{
+        minZoom: 6,
+        maxZoom: 10
+          }).setView([42,13], 6)
+        
+        L.tileLayer(
+          'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}@2x.png',
+          { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }
+        ).addTo(myMap);
+        
+        myMap.doubleClickZoom.disable();
+        
+        
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (myMap) {
+          var div = L.DomUtil.create('div', 'info legend');
+          grades = [0, 0.01, 0.4, 1.24, 2.4, 3, 5, 8 ,13, 15];
+          div.innerHTML = '<div class="mb-1"><b>Douglas Sea Scale <a target="_blank" href="https://en.wikipedia.org/wiki/Douglas_sea_scale"><i style="float: None !important" class="far fa-question-circle"></i></a><br><span style="line-height:10px"><small>(Waves Height in meters)</small></span></b></div><br>'
+          for (var i = 0; i < grades.length; i++) {
+            label = Douglas(grades[i], want_text = true)
+            div.innerHTML += '<i style="background:' + label['color'] +'"></i> ' + label['text'] + ' <br>';
+            }
+          return div;
+        };
+
+        var info = L.control();
+        info.onAdd = function (myMap) {
+          this._div = L.DomUtil.create('div', 'info');
+          this.update();
+          this._div.innerHTML = '<img style="height:200px; background: rgba(255,255,255,0.8); border-radius: 50%;" src="assets/wind_rose.png" alt="WindRose">'
+          return this._div;
+        };
+
+        info.update = function (props) {
+        };
+
+        
+        var button = L.control({position: 'topright'});
+        button.onAdd = function (myMap) {
+          var div = L.DomUtil.create('div', 'info');
+          div.innerHTML = '<button type="button" class="btn btn-info" shadow-lg id="toolbox">Show/hide legends</button>'
+          return div;
+        }
+        button.addTo(myMap);
+
+        if (isMobileDevice()){
+          tools_view = false
+        }
+        else{
+          legend.addTo(myMap);
+          info.addTo(myMap);
+          tools_view = true
+        }
+
+
+        $( "#toolbox" ).click(function() {
+        if (tools_view){
+          myMap.removeControl(legend)
+          myMap.removeControl(info)
+          tools_view = false
+        }
+        else{
+          legend.addTo(myMap);
+          info.addTo(myMap);
+          tools_view = true
+        }
+        });
+
+        //Function to create Marker
+        function markerOptions(data) {
+          size = 40
+          const iconOptions = {
+            iconSize  : [size, size],
+            iconAnchor: [size/2, size/2], 
+            className : "buoy",
+            html      :'<svg xmlns="http://www.w3.org/2000/svg" style="stroke: black; stroke-width:5; fill:' + Douglas(data.meters) + '" viewBox="0 0 512 512"><path d="M8 256C8 119 119 8 256 8s248 111 248 248-111 248-248 248S8 393 8 256zm143.6 28.9l72.4-75.5V392c0 13.3 10.7 24 24 24h16c13.3 0 24-10.7 24-24V209.4l72.4 75.5c9.3 9.7 24.8 9.9 34.3.4l10.9-11c9.4-9.4 9.4-24.6 0-33.9L273 107.7c-9.4-9.4-24.6-9.4-33.9 0L106.3 240.4c-9.4 9.4-9.4 24.6 0 33.9l10.9 11c9.6 9.5 25.1 9.3 34.4-.4z"/></svg>'
+          }
+
+          return {
+            icon: L.divIcon(iconOptions),
+            rotationAngle: data.degree,
+          }
+        }
+        
+        var calendar_years = Object.keys(calendar)
+        for (var i = 0; i < calendar_years.length; i++) {
+              $("#Year").append('<option value="'+ calendar_years[i] +'">'+ calendar_years[i] + '</option>')
+        }
+
+        var allMarkers = L.layerGroup().addTo(myMap)
+
+        $('#Year').change(function() {
+            yearselected = $(this).val()
+            $('#Month').empty();
+            monthobj = Object.keys(calendar[yearselected])
+            if (monthobj){
+              for (var i = 0; i < monthobj.length; i++) {
+                      $("#Month").append('<option value="'+ monthobj[i] +'">'+ literalMonth(monthobj[i]) + '</option>')
+              }
+              MonthlyMarkers(yearselected, monthobj[0])
+              
+            }
+          })
+        
+        $('#Month').change(function() {
+          monthselected = $(this).val()
+          yearselected = $('#Year').val()
+          MonthlyMarkers(yearselected, monthselected)
+        })
+
+
+        $('#Year').val(calendar_years[calendar_years.length - 1])
+        monthobj = Object.keys(calendar[calendar_years[calendar_years.length - 1]])
+        if (monthobj){
+          for (var i = 0; i < monthobj.length; i++) {
+                  $("#Month").append('<option value="'+ monthobj[i] +'">'+ literalMonth(monthobj[i]) + '</option>')
+          }
+        $("#Month").val(monthobj[0])
+        MonthlyMarkers(calendar_years[calendar_years.length - 1], monthobj[0])
+        }
+
+        function MonthlyMarkers(yearselected, monthselected){
+          allMarkers.eachLayer(function(layer){ 
+            allMarkers.removeLayer(layer)
+          })
+          for (var i = 0; i < calendar[yearselected][monthselected].length; i++) {
+            marker = L.marker([calendar[yearselected][monthselected][i].lat,calendar[yearselected][monthselected][i].long], markerOptions(calendar[yearselected][monthselected][i])).addTo(allMarkers)
+            marker.bindPopup('<h6>' + calendar[yearselected][monthselected][i].label + '</h6>\
+               <p> Maximum Height: ' + calendar[yearselected][monthselected][i].meters + 'm<br>\
+                Maximum Direction: ' + calendar[yearselected][monthselected][i].degree + '°</p>');
+          }
+        }
+      
+  });
+
+  </script>
+</body>
+</html>
+
+
+
+
+
+<!--   
+              html      : '<svg xmlns="http://www.w3.org/2000/svg" style="stroke: black; stroke-width:0.3; fill:' + Douglas(data.meters) + '" viewBox="0 0 32 32"><path d="M 16 3 C 8.832031 3 3 8.832031 3 16 C 3 23.167969 8.832031 29 16 29 C 23.167969 29 29 23.167969 29 16 C 29 8.832031 23.167969 3 16 3 Z M 16 5 C 22.085938 5 27 9.914063 27 16 C 27 22.085938 22.085938 27 16 27 C 9.914063 27 5 22.085938 5 16 C 5 9.914063 9.914063 5 16 5 Z M 16 8.875 L 9.59375 15.28125 L 11 16.71875 L 15 12.71875 L 15 23 L 17 23 L 17 12.71875 L 21 16.71875 L 22.40625 15.28125 Z"/></svg>'
+
+  
+  
+  myMap.on('zoomend', function() {
+    var currentZoom = myMap.getZoom();
+    console.log(currentZoom)
+      if (currentZoom < 8){
+      myMap.eachLayer(function (layer) {
+        try{
+          var icon = layer.options.icon;
+          icon.options.iconSize = [50, 50];
+          layer.setIcon(icon);
+        }
+        catch{}
+      });
+    }
+    else{
+      myMap.eachLayer(function (layer) {
+      try{
+        var icon = layer.options.icon;
+        icon.options.iconSize = [50, 50];
+        layer.setIcon(icon);
+      }
+      catch{}
+      });
+    }
+}); -->
